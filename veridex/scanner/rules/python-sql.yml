@@ -1,0 +1,20 @@
+# Veridex-authored narrow hackathon rules. These are not a general SQL audit.
+rules:
+  - id: veridex.python.sql-string-construction
+    languages: [python]
+    severity: ERROR
+    message: SQL built with concatenation or interpolation reaches execute; use bound parameters.
+    metadata:
+      application_severity: High
+      cwe: CWE-89
+    pattern-either:
+      - pattern: |
+          $QUERY = $LEFT + $RIGHT
+          ...
+          $CONN.execute($QUERY, ...)
+      - pattern: |
+          $QUERY = f"..."
+          ...
+          $CONN.execute($QUERY, ...)
+      - pattern: $CONN.execute($LEFT + $RIGHT, ...)
+      - pattern: $CONN.execute(f"...", ...)

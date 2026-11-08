@@ -1,0 +1,41 @@
+name: Veridex backend
+on:
+  push:
+    paths: ["veridex/**", ".github/workflows/backend.yml"]
+  pull_request:
+    paths: ["veridex/**", ".github/workflows/backend.yml"]
+  workflow_dispatch:
+    inputs:
+      live_smoke:
+        description: Run paid live NVIDIA smoke with repository secrets
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: veridex
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: veridex/requirements.lock
+      - run: python -m pip install -r requirements.lock
+      - run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - run: python scripts/install_opengrep.py
+      - run: VERIDEX_REAL_SCANNER=1 python -m unittest tests.test_scanner_integration -v
+      - name: Explicit live acceptance gate
+        if: github.event_name == 'workflow_dispatch' && inputs.live_smoke
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          NVIDIA_MODEL: ${{ vars.NVIDIA_MODEL }}
+          VERIDEX_LIVE_SMOKE: "1"
+        run: python -m unittest tests.test_live_smoke -v

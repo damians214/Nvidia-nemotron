@@ -23,7 +23,15 @@ class GetFinding(Record):
 class ProposePatch(Record):
     relative_path: str
     original_hash: str
-    patched_text: str = Field(min_length=1)
+    patched_text: str = Field(
+    min_length=1,
+    description=(
+        "The COMPLETE updated Python source file, not a diff or code snippet. "
+        "Include every original import, function definition, and unchanged line. "
+        "Only modify the lines necessary to fix the selected vulnerability. "
+        "The result must be valid standalone Python code ending with a newline."
+    )
+)
 
 
 class RunVerification(Record):

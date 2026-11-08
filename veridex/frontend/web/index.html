@@ -96,6 +96,10 @@ if (result.candidate) {
             if (!result.running) {
                 notify(`Investigation finished: ${result.state}`);
                 console.log('Veridex investigation:', result);
+                console.log('RUN ID:', activeRunId);
+                console.log('OUTCOME:', result.outcome);
+                console.log('ERROR:', result.error);
+                console.log('CHECKS:', result.candidate?.checks);
                 break;
             }
         }

@@ -28,11 +28,32 @@ def review_messages(finding: Finding, candidate: Candidate, before: str, source_
 
 def parse_review(content: str, evidence: set[str]) -> Review:
     try:
-        review = Review.model_validate_json(content)
+        if not isinstance(content, str):
+            raise ValueError("Reviewer response is not text")
+
+        cleaned = content.strip()
+
+        # Handle JSON wrapped in Markdown code fences.
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[-1]
+            cleaned = cleaned.rsplit("```", 1)[0].strip()
+
+        review = Review.model_validate_json(cleaned)
+
     except (ValidationError, ValueError, TypeError) as exc:
-        raise BackendError("Reviewer returned malformed verdict; candidate remains inconclusive.") from exc
+        raise BackendError(
+            "Reviewer returned malformed verdict; candidate remains inconclusive."
+        ) from exc
+
     refs = review.evidence_refs
-    if (not set(refs) <= evidence or not any(r.startswith("source:") for r in refs)
-            or not any(r.startswith(("check:", "scan:")) for r in refs)):
-        raise BackendError("Reviewer citations did not resolve to source and verification evidence.")
+
+    if (
+        not set(refs) <= evidence
+        or not any(r.startswith("source:") for r in refs)
+        or not any(r.startswith(("check:", "scan:")) for r in refs)
+    ):
+        raise BackendError(
+            "Reviewer citations did not resolve to source and verification evidence."
+        )
+
     return review
